@@ -56,7 +56,23 @@
   let resetTimer = 0;
   const watched = new WeakSet();
   const dismissed = new WeakSet();
-  const playedAt = new WeakMap();  // when each video first started playing
+  const playedAt = new WeakMap();  // when each video first started loading or playing
+  const starts = [];               // [WeakRef(video), time] for every video seen starting
+
+  function noteStart(video) {
+    if (playedAt.has(video)) return;
+    const time = Date.now();
+    playedAt.set(video, time);
+    starts.push([new WeakRef(video), time]);
+  }
+
+  // Streams that arrived within a few seconds of this video starting, trusted only when no other
+  // video started in the same window (otherwise the streams could be theirs).
+  function streamsNearStart(video, items, window = 8000) {
+    const started = playedAt.get(video);
+    const crowded = starts.some(([ref, time]) => ref.deref() !== video && Math.abs(time - started) < window);
+    return crowded ? [] : items.filter(item => item.time && Math.abs(item.time - started) < window);
+  }
 
   function directUrl(video) {
     if (video.currentSrc && !/^https?:\/\//i.test(video.currentSrc)) return '';
@@ -157,9 +173,13 @@
         [...el.attributes].filter(a => !['class', 'id', 'style'].includes(a.name)).map(a => `${a.name}=${strip(a.value)}`).join(' '),
         `videos:${el.querySelectorAll?.('video').length ?? 0}`].filter(Boolean).join(' '));
     }
+    // Times in ms relative to when this video started loading, to show which streams arrived with it.
+    const started = playedAt.get(video);
+    const relative = time => (started && time ? time - started : null);
     return JSON.stringify({extension: chrome.runtime.getManifest().version, host: location.hostname,
       poster: strip(video?.poster), src: strip(video?.currentSrc), asset: video ? videoAsset(video) : '',
-      streams: items.map(item => strip(item.url)), chain}, null, 1);
+      started: Boolean(started), otherVideoStarts: starts.filter(([ref]) => ref.deref() !== video).map(([, time]) => relative(time)),
+      streams: items.map(item => `${strip(item.url)} @${relative(item.time)}`), chain}, null, 1);
   }
 
   function pageTitle() {
@@ -213,7 +233,7 @@
       // Streams that loaded after this video started playing most likely belong to it; other
       // videos on the page (feed autoplay) load streams too.
       const since = (video && playedAt.get(video)) || 0;
-      items = (found?.items || []).map(item => ({...describe(item.url, item.kind, item.size),
+      items = (found?.items || []).map(item => ({...describe(item.url, item.kind, item.size), time: item.time,
                                                  mine: !since || item.time >= since - 3000}));
     } catch (error) {
       menu.replaceChildren(note(error.message || 'Extension is not responding. Reload the page.', true));
@@ -228,8 +248,12 @@
         || ((b.stream && !b.height) - (a.stream && !a.height)) || (b.height - a.height) || (b.stream - a.stream));
     // A site's media ID in the video's cover image (LinkedIn: /dms/image/v2/<asset>/videocover…) also
     // appears in every stream address of that video, so it singles out this video's streams.
+    const all = items;
     const asset = video ? videoAsset(video) : '';
-    const matched = asset ? items.filter(item => item.url.includes(asset)) : [];
+    let matched = asset ? items.filter(item => item.url.includes(asset)) : [];
+    // Second signal: streams that arrived within a few seconds of this video starting to load, when no
+    // other video started in that window (covers posts whose cover image has a different ID).
+    if (!matched.length && video && playedAt.has(video)) matched = streamsNearStart(video, items);
     // Known video but none of its streams seen yet: never offer other videos' streams instead.
     const waitForPlay = Boolean(asset) && !matched.length && !pageLink(video);
     if (matched.length || waitForPlay) items = matched;
@@ -260,15 +284,15 @@
     menu.replaceChildren(head);
     if (!items.length) menu.append(note(waitForPlay ? 'Play this video for a few seconds, then click again.'
                                                      : 'Play the video for a few seconds, then click again.'));
-    if (unsure) {
-      menu.append(note('Couldn’t identify this video for sure. These streams were seen on the page; the top one most likely belongs to it.'));
+    if (unsure) menu.append(note('Couldn’t identify this video for sure. These streams were seen on the page; the top one most likely belongs to it.'));
+    if ((unsure || !items.length) && video) {
       const copy = document.createElement('button');
       copy.type = 'button';
       copy.className = 'item';
       copy.textContent = 'Copy diagnostic info (for a bug report)';
       copy.addEventListener('click', async event => {
         event.stopPropagation();
-        await navigator.clipboard.writeText(diagnostics(video, items)).catch(() => {});
+        await navigator.clipboard.writeText(diagnostics(video, all)).catch(() => {});
         copy.textContent = 'Copied ✓ — paste it into an issue on GitHub';
       });
       menu.append(copy);
@@ -322,7 +346,7 @@
   function watch(video) {
     if (watched.has(video)) return;
     watched.add(video);
-    video.addEventListener('playing', () => { if (!playedAt.has(video)) playedAt.set(video, Date.now()); }, {passive: true});
+    for (const type of ['loadstart', 'playing']) video.addEventListener(type, () => noteStart(video), {passive: true});
     video.addEventListener('mouseenter', () => show(video), {passive: true});
     video.addEventListener('mousemove', () => show(video), {passive: true});
   }

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.5
+
+- Video menu: when a video's ID can't be matched to a stream (for example a LinkedIn post with a custom cover image),
+  streams that arrived within a few seconds of that video starting are used — only when no other video started at the
+  same time, so it never guesses between videos.
+- **Copy diagnostic info** now appears whenever a video can't be matched, and includes stream timing.
+
 ## 0.6.4
 
 - **LinkedIn feed: streams are matched to the exact video.** LinkedIn's video ID appears in both the video's cover image
