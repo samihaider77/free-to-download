@@ -51,21 +51,104 @@
 
 ## Install
 
-1. **Download** [`Free-to-Download-Setup.exe`](https://github.com/samihaider77/free-to-download/releases/latest/download/Free-to-Download-Setup.exe) and run it.
-   No administrator rights needed. Prefer no installer? Use the **Portable ZIP** from the [latest release](https://github.com/samihaider77/free-to-download/releases/latest).
-   > Windows may show **“Windows protected your PC”** because the app isn't code-signed yet. Click **More info → Run anyway**.
-2. **Add the browser button** (Google Chrome; other Chromium browsers such as Edge and Brave use the same steps):
-   1. Open `chrome://extensions` (or `edge://extensions`) and switch on **Developer mode**.
-   2. Click **Load unpacked** and select the `browser-extension` folder.
-      The installer adds a Start-menu shortcut to it: *Free-to-Download → Browser extension folder*.
-   The installer's last page can open Chrome's extensions page and the folder for you.
+Setup takes about two minutes and is done once. You need Windows 10 or 11 and Google Chrome
+(Microsoft Edge and Brave work the same way — see [Using Edge or Brave](#using-edge-or-brave)).
 
-That's it — the extension connects to the app by itself, with nothing to paste. Play a video, click
-**Download this video**, and pick a quality. Tick *Start Free-to-Download when I sign in to Windows* in the
-installer so the button always works.
+### Step 1 — Download the installer
 
-> A Chrome Web Store listing is in progress. Once it is live, the installer adds the extension automatically
-> and Chrome simply asks you to **Enable** it.
+Click **[Download Free-to-Download-Setup.exe](https://github.com/samihaider77/free-to-download/releases/latest/download/Free-to-Download-Setup.exe)**
+(or open the [latest release](https://github.com/samihaider77/free-to-download/releases/latest) and pick it under *Assets*).
+If Chrome asks whether to keep the file, choose **Keep**.
+
+### Step 2 — Run it
+
+Double-click **Free-to-Download-Setup.exe** in your Downloads folder.
+
+> **“Windows protected your PC”?** This blue screen appears because the app isn't code-signed yet.
+> Click **More info**, then **Run anyway**. No administrator password is needed — the app installs just for you.
+
+### Step 3 — Click through the installer
+
+1. **Select Destination Location** — keep the suggested folder and click **Next**.
+2. **Select Additional Tasks** — leave both boxes ticked and click **Next**:
+   - *Create a desktop shortcut*
+   - *Start Free-to-Download when I sign in to Windows (minimized)* — keeps the app running quietly so the
+     browser button always works, like other download managers.
+3. **Ready to Install** — click **Install**.
+4. **Completing setup** — leave all three boxes ticked and click **Finish**:
+   - *Launch Free-to-Download*
+   - *Add the browser button to Chrome*
+   - *Open the extension folder*
+
+Three windows now open: the **Free-to-Download app**, Chrome's **Extensions page**, and a File Explorer
+window showing the **browser-extension folder**.
+
+### Step 4 — Add the browser button to Chrome
+
+On Chrome's Extensions page (`chrome://extensions`):
+
+1. Switch on **Developer mode** (the toggle in the top-right corner).
+2. Click **Load unpacked** (top-left).
+3. In the folder picker, go to the **browser-extension** folder and click **Select Folder**.
+   It's the folder that opened in File Explorer; its full path is
+   `C:\Users\<your name>\AppData\Local\Programs\Free-to-Download\browser-extension`.
+4. **Free-to-Download** appears in the list of extensions. Make sure its switch is **on** (blue).
+
+> Opened the wrong folder? Pick the `browser-extension` folder itself — the one that contains `manifest.json` —
+> not the main Free-to-Download folder.
+
+### Step 5 — Pin the button and check the connection
+
+1. Click the puzzle-piece icon (**Extensions**) in Chrome's toolbar and click the pin next to **Free-to-Download**.
+2. Click the Free-to-Download icon, then **Settings**. It should say
+   **✓ Connected to Free-to-Download** — the extension finds the app by itself; there is nothing to copy or paste.
+
+### Step 6 — Download your first video
+
+1. Open a page with a video (for example a YouTube video or a LinkedIn post) and let it play for a moment.
+2. Click **Download this video** in the top-right corner of the video.
+3. Pick a quality: **Best**, **1080p**, **720p**, **480p**, **360p**, or **Audio** (MP3).
+4. A progress window shows the speed and time left. When it finishes, click **Open** or **Open folder**.
+
+Downloads are saved in `Downloads\Free-to-Download`, sorted into folders such as `Video` and `Music`
+(change this in the app under **Settings**).
+You can also paste any file or page link into the app's **Download URL** box.
+
+### Updating to a new version
+
+Download the new **Free-to-Download-Setup.exe** from the [latest release](https://github.com/samihaider77/free-to-download/releases/latest)
+and run it — it updates in place and keeps your downloads, queue and settings. Then open `chrome://extensions`
+and click **↻ Reload** on Free-to-Download (or restart Chrome).
+
+### Uninstalling
+
+Windows **Settings → Apps → Installed apps → Free-to-Download → Uninstall**, then click **Remove** on
+Free-to-Download in `chrome://extensions`. Downloaded files are kept.
+
+### Using Edge or Brave
+
+Do Step 4 at `edge://extensions` (Edge: *Developer mode* is in the left sidebar) or `brave://extensions`.
+In the app, **Browser → Open Edge extensions** opens the right page for you.
+
+### Portable version (no installer)
+
+Download **Free-to-Download-Portable.zip** from the [latest release](https://github.com/samihaider77/free-to-download/releases/latest),
+extract it anywhere (for example your Desktop), run `Free-to-Download.exe`, and do Step 4 using the
+`browser-extension` folder inside the extracted folder. Keep the folder where it is afterwards — Chrome loads
+the extension from it.
+
+### Troubleshooting
+
+| What you see | What to do |
+|---|---|
+| “Free-to-Download is not running” | Start the app from the Start menu. It must be running to receive downloads. |
+| Settings doesn't say *Connected* | Make sure the app is open, then click **Check again** in the extension's Settings. |
+| No **Download this video** button | Refresh the page and let the video play for a few seconds. On sites without a button, use the toolbar icon → *Download video from this page*. |
+| Chrome shows “Disable developer mode extensions” | Click **✕**. The extension keeps working. (This goes away once the extension is on the Chrome Web Store.) |
+| A download fails with an error | Some videos need a login, are DRM-protected, or are live streams; those can't be downloaded. |
+
+> **Coming soon:** a Chrome Web Store listing. Then Step 4 disappears — after installing the app, Chrome simply
+> shows *“New extension added”* and you click **Enable**.
 
 ## How it works
 

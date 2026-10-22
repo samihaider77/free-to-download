@@ -8,13 +8,16 @@
 
 Windows may show **"Windows protected your PC"** because the app is not code-signed yet. Click **More info → Run anyway**.
 
-## Set up the browser button (one time)
+## Quick setup (one time, about two minutes)
 
-1. Open `chrome://extensions` (or `edge://extensions`) and turn on **Developer mode**.
-   The installer's last page can open it for you, together with the extension folder.
-2. Click **Load unpacked** and choose the `browser-extension` folder inside the install folder
-   (Start menu → *Free-to-Download* → *Browser extension folder*).
+1. Download and run **Free-to-Download-Setup.exe** (on the blue SmartScreen screen: **More info → Run anyway**).
+2. Click **Next → Next → Install**, leave the boxes ticked, and click **Finish**. Chrome's Extensions page and the
+   extension folder open automatically.
+3. In Chrome, switch on **Developer mode** (top-right), click **Load unpacked**, and select the
+   **browser-extension** folder that opened.
+4. Play a video and click **Download this video**. The extension connects to the app by itself — nothing to paste.
 
-The extension connects to the app automatically — there is no token to paste.
+**Updating?** Run the new Setup.exe over the old one, then click **↻ Reload** on the extension in `chrome://extensions`.
 
-Full guide and changelog: see the [README](https://github.com/samihaider77/free-to-download#readme) and [CHANGELOG](https://github.com/samihaider77/free-to-download/blob/main/CHANGELOG.md).
+📖 Full illustrated guide with troubleshooting: [README → Install](https://github.com/samihaider77/free-to-download#install) ·
+Changes: [CHANGELOG](https://github.com/samihaider77/free-to-download/blob/main/CHANGELOG.md)
