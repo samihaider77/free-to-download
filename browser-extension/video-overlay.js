@@ -208,8 +208,13 @@
   }
 
   async function send(url, row, quality) {
+    const what = row.querySelector('.what');
+    const original = what.textContent;
     row.disabled = true;
-    row.querySelector('.what').textContent = 'Sending to Free-to-Download…';
+    if (row.nextElementSibling?.classList.contains('error')) row.nextElementSibling.remove();
+    what.textContent = 'Sending to Free-to-Download…';
+    // If the app is closed the browser starts it, which can take a few seconds.
+    const slow = setTimeout(() => { what.textContent = 'Starting Free-to-Download…'; }, 1500);
     try {
       const response = await chrome.runtime.sendMessage({type: 'download', urls: [url], media: true,
         referer: location.href, title: pageTitle(), quality});
@@ -221,7 +226,11 @@
       resetTimer = setTimeout(() => { label.textContent = 'Download this video'; bar.classList.remove('sent'); place(); }, 3000);
       place();
     } catch (error) {
-      row.replaceWith(note(error.message || 'Unable to send video', true));
+      row.after(note(error.message || 'Unable to send video', true));
+    } finally {
+      clearTimeout(slow);
+      what.textContent = original;
+      row.disabled = false;
     }
   }
 

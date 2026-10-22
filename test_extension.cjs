@@ -69,8 +69,11 @@ async function capture(url,type,tabId=1,frameId=3,extra=[]) {
   local={token:'third'};
   assert.equal((await download()).accepted,1);
   assert.equal(JSON.stringify(launches),JSON.stringify(['com.free_to_download.launcher']));
-  // Launcher not registered (app never run on this PC): a clear message, not "Failed to fetch".
+  // Launcher not registered (app never run on this PC): a clear message with the reason, not "Failed to fetch".
   appOpen=false; chrome.runtime.sendNativeMessage=async()=>{throw new Error('Specified native messaging host not found.');};
-  assert.match((await download()).error,/not running/);
+  assert.match((await download()).error,/Couldn't start Free-to-Download automatically \(Specified native messaging host not found\.\)/);
+  // Launcher ran but the app never answered: a "still starting" message after the wait.
+  chrome.runtime.sendNativeMessage=async()=>({started:true});
+  assert.match((await download()).error,/starting but is taking a while/);
   console.log('PASS: manifest detection, segment exclusion, deduplication, tab/frame isolation, navigation cleanup and automatic pairing');
 })().catch(error=>{console.error(error);process.exitCode=1;});

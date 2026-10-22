@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.2
+
+- When the app is closed, the extension now waits up to a minute for it to start (the first start after installing or
+  updating can be slow while Windows scans the new files) and shows **“Starting Free-to-Download…”** meanwhile.
+- Clear, specific messages if the app can't be started, instead of a generic “not running”.
+- A failed attempt no longer removes that quality from the video menu; you can retry straight away.
+
 ## 0.6.1
 
 - **The browser starts the app for you.** If Free-to-Download is closed when you click a download, the extension asks

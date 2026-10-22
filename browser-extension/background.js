@@ -30,10 +30,12 @@ async function pair(port) {
 async function startApp(port) {
   try {
     await chrome.runtime.sendNativeMessage(LAUNCHER, {action: 'start'});
-  } catch {
-    throw new NotRunning();
+  } catch (error) {
+    throw new Error(`Couldn't start Free-to-Download automatically (${error.message}). ` +
+                    'Open it once from the Start menu, then try again.');
   }
-  for (let attempt = 0; attempt < 40; attempt++) {
+  // The first start after installing or updating can be slow while Windows scans the new files.
+  for (let attempt = 0; attempt < 120; attempt++) {
     await sleep(500);
     try {
       return await pair(port);
@@ -41,7 +43,7 @@ async function startApp(port) {
       if (!(error instanceof NotRunning)) throw error;
     }
   }
-  throw new NotRunning();
+  throw new Error('Free-to-Download is starting but is taking a while. Try again in a few seconds.');
 }
 
 async function pairOrStart(port) {
