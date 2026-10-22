@@ -1,23 +1,65 @@
 const QUALITIES = ['best', '2160', '1440', '1080', '720', '480', '360', 'audio'];
+const NOT_RUNNING = 'Free-to-Download is not running. Start the app, then try again.';
+
+// Ask the desktop app for its token. The app answers only this extension (it checks the
+// browser-set Origin header against our fixed ID), so no manual pairing is needed.
+async function pair(port) {
+  let response;
+  try {
+    response = await fetch(`http://127.0.0.1:${port}/pair`, {
+      method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}', signal: AbortSignal.timeout(3000)
+    });
+  } catch {
+    throw new Error(NOT_RUNNING);
+  }
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok || !result.token) throw new Error(result.error || 'Could not connect to Free-to-Download.');
+  await chrome.storage.local.set({token: result.token});
+  return result;
+}
+
+async function connection() {
+  const {token = '', port = 17863} = await chrome.storage.local.get(['token', 'port']);
+  return {token: token || (await pair(port)).token, port};
+}
+
 async function sendUrls(urls, media = false, referer = '', title = '', quality = 'best') {
-  const { token = '', port = 17863 } = await chrome.storage.local.get(['token', 'port']);
-  if (!token) throw new Error('Open extension Settings and pair with the desktop app.');
   const body = {urls, media, referer};
   if (media && title) body.title = title.slice(0, 200);
   if (media && QUALITIES.includes(quality) && quality !== 'best') body.quality = quality;
-  const response = await fetch(`http://127.0.0.1:${port}/downloads`, {
-    method: 'POST', headers: {'Content-Type': 'application/json', Authorization: `Bearer ${token}`},
+  let {token, port} = await connection();
+  const post = auth => fetch(`http://127.0.0.1:${port}/downloads`, {
+    method: 'POST', headers: {'Content-Type': 'application/json', Authorization: `Bearer ${auth}`},
     body: JSON.stringify(body), signal: AbortSignal.timeout(5000)
-  });
+  }).catch(() => { throw new Error(NOT_RUNNING); });
+  let response = await post(token);
+  if (response.status === 401) {
+    // The app was reinstalled or its data reset: fetch the new token once and retry.
+    token = (await pair(port)).token;
+    response = await post(token);
+  }
   const result = await response.json();
   if (!response.ok) throw new Error(result.error || 'Desktop app rejected this request.');
   return result;
 }
+
+async function status() {
+  try {
+    const {port = 17863} = await chrome.storage.local.get('port');
+    const result = await pair(port);
+    return {connected: true, version: result.version};
+  } catch (error) {
+    return {connected: false, error: error.message};
+  }
+}
+
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.removeAll(() => {
     chrome.contextMenus.create({id: 'send', title: 'Download with Free-to-Download', contexts: ['link', 'image', 'video', 'audio']});
   });
+  status();
 });
+chrome.runtime.onStartup.addListener(() => { status(); });
 chrome.contextMenus.onClicked.addListener(async info => {
   if (info.menuItemId !== 'send') return;
   try {
@@ -35,6 +77,10 @@ chrome.contextMenus.onClicked.addListener(async info => {
 });
 chrome.runtime.onMessage.addListener((message, sender, respond) => {
   if (sender.id !== chrome.runtime.id) return;
+  if (message.type === 'status') {
+    status().then(respond);
+    return true;
+  }
   if (message.type === 'media-list') {
     const tabId = sender.tab?.id ?? message.tabId;
     chrome.storage.session.get('media-' + tabId).then(data => {

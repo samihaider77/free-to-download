@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy policy — Free-to-Download</title>
+<link rel="icon" href="assets/icon.png">
+<style>
+  :root { --bg: #f6f8fb; --surface: #fff; --text: #0f172a; --muted: #475569; --line: #e2e8f0; --accent: #0d9488; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #0b1220; --surface: #111a2e; --text: #e5e7eb; --muted: #94a3b8; --line: #1f2a44; } }
+  body { margin: 0; font: 16px/1.65 "Segoe UI", system-ui, sans-serif; background: var(--bg); color: var(--text); }
+  main { max-width: 760px; margin: 0 auto; padding: 40px 20px 60px; }
+  a { color: var(--accent); }
+  h1 { font-size: 32px; margin: 0 0 4px; } h2 { font-size: 20px; margin: 32px 0 8px; }
+  .muted { color: var(--muted); }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px 22px; }
+</style>
+</head>
+<body>
+<main>
+  <p><a href="./">← Free-to-Download</a></p>
+  <h1>Privacy policy</h1>
+  <p class="muted">Applies to the Free-to-Download desktop app and its browser extension. Last updated October 2026.</p>
+
+  <div class="card"><b>In short:</b> Free-to-Download does not collect, store or send your personal data to us or to anyone else. There are no accounts, analytics, ads or tracking.</div>
+
+  <h2>What the browser extension handles</h2>
+  <ul>
+    <li><b>Media addresses on the page you are viewing.</b> While a video plays, the extension notes the addresses of video and audio streams the page loads, so it can offer them in the <i>Download this video</i> menu. These are kept only in your browser's temporary session storage, per tab (at most 60, for up to 30 minutes), and are deleted when the tab navigates or closes.</li>
+    <li><b>The link and title of the page</b> you choose to download from, used to fetch the video and name the file.</li>
+    <li><b>A pairing token</b> that lets the extension talk to the app on your own computer. It is stored in the extension's local storage.</li>
+  </ul>
+  <p>The extension does <b>not</b> read or send cookies, passwords, form data, login headers or your browsing history.</p>
+
+  <h2>Where data goes</h2>
+  <p>Only to the Free-to-Download app running on <b>your own computer</b> (address <code>127.0.0.1</code>), and only when you click to download. Nothing is sent to the developers or to any third party.</p>
+  <p>To download a file or video, the app connects directly to the website that hosts it, just as your browser would.</p>
+
+  <h2>Permissions and why they are needed</h2>
+  <ul>
+    <li><b>Access to websites (http/https)</b> — to show the download button over videos on the pages you visit and to notice video streams as they load.</li>
+    <li><b>webRequest</b> — to see the type and address of media responses (not their contents) so streams can be offered for download.</li>
+    <li><b>contextMenus</b> — for “Download with Free-to-Download” on links and media.</li>
+    <li><b>storage</b> — to keep the pairing token and the temporary list of detected media.</li>
+    <li><b>activeTab, scripting</b> — to list links on the current page, only when you press “Find page links” in the popup.</li>
+  </ul>
+
+  <h2>Data retention and deletion</h2>
+  <p>Detected media addresses are removed automatically as described above. Removing the extension deletes all of its stored data. The desktop app keeps your download queue and settings in a <code>data</code> folder in its install folder; uninstalling or deleting that folder removes them.</p>
+
+  <h2>Contact</h2>
+  <p>Questions or concerns: open an issue at <a href="https://github.com/samihaider77/free-to-download/issues">github.com/samihaider77/free-to-download/issues</a>.</p>
+</main>
+</body>
+</html>

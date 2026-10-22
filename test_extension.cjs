@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const store = {};
 const event = () => ({addListener(fn) {this.fn = fn;}});
 const chrome = {
-  runtime: {id:'test',onInstalled:event(),onMessage:event()},
+  runtime: {id:'test',onInstalled:event(),onStartup:event(),onMessage:event()},
   contextMenus: {onClicked:event()},
   webRequest: {onResponseStarted:event()},
   tabs: {onRemoved:event(),onUpdated:event()},
@@ -39,5 +39,25 @@ async function capture(url,type,tabId=1,frameId=3,extra=[]) {
   chrome.tabs.onUpdated.fn(1,{status:'loading'});
   await vm.runInContext('storageQueue',context);
   assert.equal(store['media-1'],undefined);
-  console.log('PASS: manifest detection, segment exclusion, deduplication, tab/frame isolation and navigation cleanup');
+  // Automatic pairing: no stored token -> POST /pair, store it, then send the download with it.
+  // A 401 (app reinstalled, new token) re-pairs once and retries.
+  const calls=[]; let appToken='first';
+  context.fetch=async (url,options={})=>{
+    calls.push(`${options.method||'GET'} ${new URL(url).pathname} ${options.headers?.Authorization||''}`.trim());
+    if (url.endsWith('/pair')) return {ok:true,status:200,json:async()=>({token:appToken,version:'0.6.0'})};
+    const ok=options.headers.Authorization===`Bearer ${appToken}`;
+    return {ok,status:ok?202:401,json:async()=>ok?{accepted:1}:{error:'bad token'}};
+  };
+  context.AbortSignal={timeout:()=>undefined};
+  let local={};
+  chrome.storage.local={async get(keys){return Object.fromEntries([].concat(keys).filter(k=>k in local).map(k=>[k,local[k]]));},async set(v){Object.assign(local,v);}};
+  const download=()=>new Promise(resolve=>chrome.runtime.onMessage.fn({type:'download',urls:['https://cdn.example/a.zip']},{id:'test'},resolve));
+  assert.equal((await download()).accepted,1);
+  assert.equal(JSON.stringify(calls),JSON.stringify(['POST /pair','POST /downloads Bearer first']));
+  appToken='second'; calls.length=0;
+  assert.equal((await download()).accepted,1);
+  assert.equal(JSON.stringify(calls),JSON.stringify(['POST /downloads Bearer first','POST /pair','POST /downloads Bearer second']));
+  context.fetch=async()=>{throw new TypeError('Failed to fetch');}; local={};
+  assert.match((await download()).error,/not running/);
+  console.log('PASS: manifest detection, segment exclusion, deduplication, tab/frame isolation, navigation cleanup and automatic pairing');
 })().catch(error=>{console.error(error);process.exitCode=1;});

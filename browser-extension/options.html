@@ -1,1 +1,14 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Pair Free-to-Download</title><link rel="stylesheet" href="style.css"></head><body><h1>Connect your desktop</h1><p>Open Free-to-Download → Browser, then copy its pairing token here. The desktop app must be running.</p><label for="token">Pairing token</label><input id="token" type="password" autocomplete="off"><label for="port">Local port</label><input id="port" type="number" value="17863" min="1024" max="65535"><button id="save">Save &amp; test connection</button><p id="status" role="status"></p><script src="options.js"></script></body></html>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Free-to-Download settings</title><link rel="stylesheet" href="style.css"></head><body>
+<h1>Free-to-Download</h1>
+<p id="state" role="status">Checking the connection…</p>
+<p class="hint">The extension connects to the Free-to-Download app on this computer automatically. Keep the app running while you browse.</p>
+<button id="check">Check again</button>
+<details>
+  <summary>Advanced</summary>
+  <p class="hint">Only needed if automatic connection fails: paste the token from the app's <b>Browser</b> window, or change the local port.</p>
+  <label for="token">Pairing token</label><input id="token" type="password" autocomplete="off">
+  <label for="port">Local port</label><input id="port" type="number" value="17863" min="1024" max="65535">
+  <button id="save" class="secondary">Save &amp; test</button>
+  <p id="status" role="status"></p>
+</details>
+<script src="options.js"></script></body></html>

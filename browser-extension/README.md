@@ -6,7 +6,8 @@ Adds a **Download this video** button over web videos and sends your choice to t
 
 1. Install and open the Free-to-Download app.
 2. Open `chrome://extensions`, switch on **Developer mode**, click **Load unpacked** and select this folder.
-3. In the app, click **Browser → Copy pairing token**. Open the extension's **Settings** (toolbar icon → Settings), paste the token and save.
+
+That's all: the extension connects to the app automatically. Its **Settings** page shows the connection status.
 
 ## What it does
 
@@ -16,7 +17,7 @@ Adds a **Download this video** button over web videos and sends your choice to t
 
 ## Privacy
 
-- Requests go only to the app on your own computer (`127.0.0.1`), authenticated with the pairing token.
+- Requests go only to the app on your own computer (`127.0.0.1`). The app gives its token only to this extension's fixed ID, and checks it on every request.
 - Detected media addresses are kept in temporary session storage per tab (at most 60, for up to 30 minutes), cleared when the tab navigates or closes, and sent to the app only when you click.
 - No cookies or login headers are read or sent, and nothing is sent anywhere else.
 

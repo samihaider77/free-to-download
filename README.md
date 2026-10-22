@@ -58,10 +58,14 @@
    1. Open `chrome://extensions` (or `edge://extensions`) and switch on **Developer mode**.
    2. Click **Load unpacked** and select the `browser-extension` folder.
       The installer adds a Start-menu shortcut to it: *Free-to-Download → Browser extension folder*.
-3. **Pair the browser with the app** (one time): in Free-to-Download click **Browser → Copy pairing token**,
-   then open the extension's **Settings** and paste it. The status shows *Connected*.
+   The installer's last page can open Chrome's extensions page and the folder for you.
 
-That's it. Play a video, click **Download this video**, and pick a quality.
+That's it — the extension connects to the app by itself, with nothing to paste. Play a video, click
+**Download this video**, and pick a quality. Tick *Start Free-to-Download when I sign in to Windows* in the
+installer so the button always works.
+
+> A Chrome Web Store listing is in progress. Once it is live, the installer adds the extension automatically
+> and Chrome simply asks you to **Enable** it.
 
 ## How it works
 
@@ -80,7 +84,7 @@ flowchart LR
 - **Desktop app** — Python + Tkinter (`app/`). The direct-file engine (`downloader.py`) splits a file into byte ranges and downloads them over persistent parallel connections. It resumes only when the server proves the file hasn't changed (strong ETag, validated ranges), and publishes the finished file atomically without ever overwriting an existing one.
 - **Video downloads** (`media.py`) use [yt-dlp](https://github.com/yt-dlp/yt-dlp) to find and fetch the right streams, and [FFmpeg](https://ffmpeg.org) to combine audio and video into an MP4 that plays everywhere. A final check rejects results that contain no audio or video data, such as a stream header saved by mistake.
 - **Browser extension** — Chrome Manifest V3 (`browser-extension/`). It adds the on-video button, notices media streams while a video plays, and sends your choice to the app.
-- **Local bridge** (`bridge.py`) — an HTTP server bound to `127.0.0.1` that accepts requests only from the paired extension (token, origin, host and size checks).
+- **Local bridge** (`bridge.py`) — an HTTP server bound to `127.0.0.1`. The extension pairs automatically: the app hands its token only to requests that the browser stamps with the extension's own fixed ID (`Origin: chrome-extension://…`), which web pages and other extensions cannot forge. Every download request is then checked for the token, origin, host and size.
 
 ## Build from source
 
@@ -104,9 +108,10 @@ node test_extension.cjs
 python -m PyInstaller --noconfirm --distpath dist --workpath build packaging\free-to-download.spec
 ```
 
-The installer is built with [Inno Setup](https://jrsoftware.org/isinfo.php): `iscc /DAppVersion=0.5.2 packaging\installer.iss`.
+The installer is built with [Inno Setup](https://jrsoftware.org/isinfo.php): `iscc /DAppVersion=0.6.0 packaging\installer.iss`.
+Store publishing steps are in [`packaging/store-listing.md`](packaging/store-listing.md).
 
-**Releases are automated.** Pushing a tag such as `v0.5.2` runs [`release.yml`](.github/workflows/release.yml), which tests, builds, smoke-tests the packaged app with real downloads, and publishes the installer, portable ZIP and checksums. Keep `app/version.py` and `browser-extension/manifest.json` at the same version as the tag.
+**Releases are automated.** Pushing a tag such as `v0.6.0` runs [`release.yml`](.github/workflows/release.yml), which tests, builds, smoke-tests the packaged app with real downloads, and publishes the installer, portable ZIP and checksums. Keep `app/version.py` and `browser-extension/manifest.json` at the same version as the tag.
 
 ## Project structure
 
@@ -124,6 +129,7 @@ Free-to-Download is meant for videos and files you own or have permission to dow
 
 ## Roadmap
 
+- Chrome Web Store / Edge Add-ons listing (one-click extension install)
 - Code-signed releases (no SmartScreen warning)
 - In-app updates for the app and its yt-dlp engine
 - Show real available qualities and file sizes in the video menu

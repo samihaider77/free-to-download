@@ -2,6 +2,7 @@
 from pathlib import Path
 import json
 import os
+import subprocess
 import sys
 import threading
 import time
@@ -19,6 +20,38 @@ from bridge import Bridge
 from state import InstanceLock
 
 ROOT = Path(sys.executable).resolve().parent if getattr(sys, "frozen", False) else Path(__file__).resolve().parent.parent
+
+
+def browser_path(executable="chrome.exe"):
+    """Installed browser executable from Windows' App Paths registry, or None."""
+    try:
+        import winreg
+    except ImportError:
+        return None
+    for hive in (winreg.HKEY_CURRENT_USER, winreg.HKEY_LOCAL_MACHINE):
+        try:
+            with winreg.OpenKey(hive, rf"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\{executable}") as key:
+                path = winreg.QueryValue(key, None)
+            if path and Path(path).is_file():
+                return path
+        except OSError:
+            continue
+    return None
+
+
+def show_running_instance():
+    """Ask an already-running app (same data folder) to show its window. True if it answered."""
+    import urllib.request
+    try:
+        token = json.loads((ROOT / "data" / "browser.json").read_text(encoding="utf-8"))["token"]
+        request = urllib.request.Request("http://127.0.0.1:17863/show", data=b"{}",
+                                         headers={"Content-Type": "application/json", "Authorization": "Bearer " + token})
+        with urllib.request.urlopen(request, timeout=3) as response:
+            return response.status == 200
+    except (OSError, ValueError, KeyError):
+        return False
+
+
 def category_for(name):
     extension = Path(name).suffix.lower()
     for category, extensions in {
@@ -520,29 +553,56 @@ class App:
         dialog.transient(self.root)
         dialog.protocol("WM_DELETE_WINDOW", dialog.destroy)
         dialog.bind("<Escape>", lambda event: dialog.destroy())
-        dialog.geometry("600x420+80+80")
+        dialog.geometry("+80+80")
         frame = ttk.Frame(dialog, padding=22)
         frame.pack(fill="both", expand=True)
-        ttk.Label(frame, text="Free-to-Download Companion", font=("Segoe UI", 16, "bold")).pack(anchor="w")
-        ttk.Label(frame, text="Load the browser-extension folder as an unpacked extension in Chrome or Edge.\nOpen its Settings and paste the pairing token below.\nThen right-click a link, image, or direct media URL to send it here.", wraplength=530).pack(anchor="w", pady=14)
+        ttk.Label(frame, text="Browser button", font=("Segoe UI", 16, "bold")).pack(anchor="w")
+        ttk.Label(frame, text="The Free-to-Download extension connects to this app automatically. There is nothing to paste.\n\n"
+                              "Not added to your browser yet? Open the extensions page, turn on Developer mode, click "
+                              "Load unpacked and choose the extension folder.", wraplength=520, justify="left").pack(anchor="w", pady=(10, 14))
+        folder = ROOT / "browser-extension"
+        buttons = ttk.Frame(frame)
+        buttons.pack(anchor="w")
+        for label, executable, url in (("Open Chrome extensions", "chrome.exe", "chrome://extensions/"),
+                                       ("Open Edge extensions", "msedge.exe", "edge://extensions/")):
+            path = browser_path(executable)
+            if path:
+                ttk.Button(buttons, text=label, command=lambda path=path, url=url: subprocess.Popen([path, url])).pack(side="left", padx=(0, 8))
+        if folder.is_dir():
+            ttk.Button(buttons, text="Open extension folder", command=lambda: os.startfile(str(folder))).pack(side="left")
         if self.bridge:
-            ttk.Label(frame, text=f"Local port: {self.bridge.port}  ·  " + (self.bridge.error or "Listening on this computer only")).pack(anchor="w")
-            entry = ttk.Entry(frame, width=64)
-            entry.insert(0, self.bridge.token)
-            entry.configure(state="readonly")
-            entry.pack(fill="x", pady=10)
-            def copy():
-                self.root.clipboard_clear()
-                self.root.clipboard_append(self.bridge.token)
-            ttk.Button(frame, text="Copy pairing token", command=copy).pack(anchor="w")
-        ttk.Button(frame, text="Close", command=dialog.destroy).pack(anchor="e", pady=12)
-        ttk.Label(frame, text="Handoffs use your default download folder. The extension reads page links only\nwhen you ask it to. It does not collect cookies or intercept other downloads.", wraplength=530).pack(anchor="w", pady=(15, 0))
+            ttk.Label(frame, text=("Connection: " + self.bridge.error) if self.bridge.error
+                      else f"Connection: listening on this computer only (port {self.bridge.port})").pack(anchor="w", pady=(16, 0))
+            advanced = ttk.Frame(frame)
+            def show_token():
+                toggle.pack_forget()
+                entry = ttk.Entry(advanced, width=60)
+                entry.insert(0, self.bridge.token)
+                entry.configure(state="readonly")
+                entry.pack(side="left", fill="x", expand=True)
+                def copy():
+                    self.root.clipboard_clear()
+                    self.root.clipboard_append(self.bridge.token)
+                ttk.Button(advanced, text="Copy", command=copy).pack(side="left", padx=(8, 0))
+            toggle = ttk.Button(frame, text="Manual pairing token…", command=show_token)
+            toggle.pack(anchor="w", pady=(10, 0))
+            advanced.pack(fill="x", pady=(6, 0))
+        ttk.Label(frame, text="The extension reads page links only when you ask it to. It does not collect cookies or intercept other downloads.",
+                  wraplength=520, foreground="#64748b").pack(anchor="w", pady=(16, 0))
+        ttk.Button(frame, text="Close", command=dialog.destroy).pack(anchor="e", pady=(12, 0))
 
     def tick(self):
         dirty = False
         now = time.monotonic()
         active = 0
         total_speed = 0
+        if self.bridge and self.bridge.show_requested:
+            self.bridge.show_requested = False
+            self.root.deiconify()
+            self.root.lift()
+            self.root.attributes("-topmost", True)
+            self.root.after(500, lambda: self.root.attributes("-topmost", False))
+            self.root.focus_force()
         if self.bridge and not self.closing:
             for _ in range(5):
                 try:
@@ -648,9 +708,13 @@ if __name__ == "__main__":
     try:
         app = App(window, sys.argv[2] if len(sys.argv) > 2 and sys.argv[1] == "--smoke-test" else None)
     except RuntimeError as exc:
-        messagebox.showerror("Free-to-Download", str(exc))
+        # Already running (often minimized since sign-in): bring that window forward instead of complaining.
+        if not show_running_instance():
+            messagebox.showerror("Free-to-Download", str(exc))
         window.destroy()
-        raise SystemExit(1)
+        raise SystemExit(0)
+    if "--minimized" in sys.argv:
+        window.iconify()
     if "--smoke-test" in sys.argv:
         window.after(600, app.close)
     window.mainloop()

@@ -55,6 +55,38 @@ class BridgeTest(unittest.TestCase):
         with self.assertRaises(urllib.error.HTTPError):
             self.send({"urls": ["https://example.com/video.m3u8"], "media": True, "referer": "https://example.com/\r\nX: bad"})
 
+    def pair(self, origin=None):
+        headers = {"Content-Type": "application/json"}
+        if origin:
+            headers["Origin"] = origin
+        request = urllib.request.Request(self.base + "/pair", data=b"{}", headers=headers)
+        return urllib.request.urlopen(request, timeout=3)
+
+    def test_own_extension_pairs_automatically(self):
+        with self.pair("chrome-extension://peokmobebldmdpbnlnbgolckefjcndkf") as response:
+            token = json.loads(response.read())["token"]
+        self.assertEqual(token, self.bridge.token)
+        # The fetched token then authorises downloads exactly like a pasted one.
+        with self.send({"urls": ["https://example.com/file.zip"]}, token=token,
+                       origin="chrome-extension://peokmobebldmdpbnlnbgolckefjcndkf") as response:
+            self.assertEqual(response.status, 202)
+
+    def test_pairing_refused_for_pages_other_extensions_and_missing_origin(self):
+        for origin in ("https://evil.example", "chrome-extension://" + "a" * 32, None):
+            with self.subTest(origin=origin), self.assertRaises(urllib.error.HTTPError) as context:
+                self.pair(origin)
+            self.assertEqual(context.exception.code, 403)
+
+    def test_second_launch_can_ask_window_to_show(self):
+        request = urllib.request.Request(self.base + "/show", data=b"{}", headers={
+            "Content-Type": "application/json", "Authorization": "Bearer " + self.bridge.token})
+        with urllib.request.urlopen(request, timeout=3) as response:
+            self.assertEqual(response.status, 200)
+        self.assertTrue(self.bridge.show_requested)
+        with self.assertRaises(urllib.error.HTTPError):
+            urllib.request.urlopen(urllib.request.Request(self.base + "/show", data=b"{}", headers={
+                "Content-Type": "application/json", "Authorization": "Bearer wrong"}), timeout=3)
+
     def test_web_origin_rejected(self):
         with self.assertRaises(urllib.error.HTTPError) as context:
             self.send({"urls": ["https://example.com/file.zip"]}, origin="https://evil.example")

@@ -51,11 +51,37 @@ jobs:
         run: python test_packaged_media.py ../dist/Free-to-Download/Free-to-Download.exe
 
       - name: Build the installer
+        env:
+          # Set these repository variables once the extension is store-listed; the installer then registers
+          # it so Chrome/Edge show "New extension added → Enable" automatically.
+          CHROME_STORE_ID: ${{ vars.CHROME_STORE_ID }}
+          EDGE_STORE_ID: ${{ vars.EDGE_STORE_ID }}
         run: |
           $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
           if (-not (Test-Path $iscc)) { choco install innosetup --no-progress -y }
-          & $iscc "/DAppVersion=$env:VERSION" packaging/installer.iss
+          $defines = @("/DAppVersion=$env:VERSION")
+          if ($env:CHROME_STORE_ID) { $defines += "/DChromeStoreId=$env:CHROME_STORE_ID" }
+          if ($env:EDGE_STORE_ID) { $defines += "/DEdgeStoreId=$env:EDGE_STORE_ID" }
+          & $iscc @defines packaging/installer.iss
           if ($LASTEXITCODE -ne 0) { throw "Inno Setup failed." }
+
+      - name: Build the browser store upload package
+        run: |
+          # Stores assign their own extension ID and reject the local "key" field.
+          $folder = "dist/store-extension"
+          Copy-Item browser-extension $folder -Recurse
+          $manifest = Get-Content "$folder/manifest.json" -Raw | ConvertFrom-Json
+          $manifest.PSObject.Properties.Remove("key")
+          # Chrome Web Store policy forbids downloading YouTube videos: the store build shows no button there.
+          $manifest.content_scripts[0] | Add-Member -NotePropertyName exclude_matches -NotePropertyValue @("*://*.youtube.com/*", "*://youtube.com/*", "*://youtu.be/*")
+          $manifest | ConvertTo-Json -Depth 10 | Set-Content "$folder/manifest.json" -Encoding utf8NoBOM
+          Remove-Item "$folder/README.md"
+          Compress-Archive -Path "$folder/*" -DestinationPath dist/Free-to-Download-store-upload.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: browser-store-upload
+          path: dist/Free-to-Download-store-upload.zip
 
       - name: Build the portable ZIP and checksums
         run: |

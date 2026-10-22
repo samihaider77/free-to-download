@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.6.0
+
+- **No more pairing token.** The browser extension now connects to the app automatically: it has a fixed ID, and the
+  app hands its token only to requests the browser stamps with that ID. Reinstalling the app reconnects by itself.
+- The extension's Settings page shows the connection status; manual token entry moved under *Advanced*.
+- Installer: optional **Start when I sign in to Windows (minimized)**, and a final step that opens Chrome's extensions
+  page and the extension folder.
+- Opening the app while it already runs brings the existing window forward.
+- Ready for the Chrome Web Store / Edge Add-ons: once a store ID is configured, the installer registers the extension so
+  the browser offers to enable it. Store upload package and privacy policy included.
+
 ## 0.5.2 — first public release
 
 ### Video downloads

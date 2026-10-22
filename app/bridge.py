@@ -9,12 +9,15 @@ import secrets
 import threading
 
 from downloader import atomic_json, validate_url
-from version import NAME, VERSION
+from version import EXTENSION_IDS, NAME, VERSION
 from media import QUALITIES
 
 
 class Bridge:
-    def __init__(self, data, port=17863):
+    def __init__(self, data, port=17863, extension_ids=EXTENSION_IDS):
+        # Browsers stamp every extension request with Origin: chrome-extension://<id>; web pages and other
+        # extensions cannot forge it, so our own extension may fetch the token without a manual paste.
+        self.trusted_origins = {f"chrome-extension://{extension_id}" for extension_id in extension_ids}
         path = Path(data) / "browser.json"
         if path.exists():
             self.token = json.loads(path.read_text(encoding="utf-8"))["token"]
@@ -22,6 +25,7 @@ class Bridge:
             self.token = secrets.token_urlsafe(32)
             atomic_json(path, {"token": self.token})
         self.inbox = queue.Queue(maxsize=100)
+        self.show_requested = False
         self.server = None
         self.thread = None
         self.error = ""
@@ -82,7 +86,18 @@ class Bridge:
                 except (ValueError, OSError):
                     self.reply(400, {"error": "Expected a request of at most 64 KiB"})
                     return
+                if self.path == "/pair":
+                    if (self.headers.get("Host") != f"127.0.0.1:{bridge.port}"
+                            or self.headers.get("Origin", "") not in bridge.trusted_origins):
+                        self.reply(403, {"error": "Only the Free-to-Download extension can pair automatically"})
+                    else:
+                        self.reply(200, {"token": bridge.token, "app": NAME, "version": VERSION})
+                    return
                 if not self.allowed():
+                    return
+                if self.path == "/show":
+                    bridge.show_requested = True  # a second launch asks this window to come forward
+                    self.reply(200, {"shown": True})
                     return
                 if self.path != "/downloads":
                     self.reply(404, {"error": "Unknown endpoint"})
