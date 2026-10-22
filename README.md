@@ -72,8 +72,8 @@ Double-click **Free-to-Download-Setup.exe** in your Downloads folder.
 1. **Select Destination Location** — keep the suggested folder and click **Next**.
 2. **Select Additional Tasks** — leave both boxes ticked and click **Next**:
    - *Create a desktop shortcut*
-   - *Start Free-to-Download when I sign in to Windows (minimized)* — keeps the app running quietly so the
-     browser button always works, like other download managers.
+   - *Start Free-to-Download when I sign in to Windows (minimized)* — optional. Even without it, the
+     browser starts the app by itself whenever you click a download.
 3. **Ready to Install** — click **Install**.
 4. **Completing setup** — leave all three boxes ticked and click **Finish**:
    - *Launch Free-to-Download*
@@ -110,6 +110,9 @@ On Chrome's Extensions page (`chrome://extensions`):
 3. Pick a quality: **Best**, **1080p**, **720p**, **480p**, **360p**, or **Audio** (MP3).
 4. A progress window shows the speed and time left. When it finishes, click **Open** or **Open folder**.
 
+The app doesn't need to be open: if it's closed, the browser starts it automatically (minimized) and the
+download begins a few seconds later. You can close the app window whenever you like.
+
 Downloads are saved in `Downloads\Free-to-Download`, sorted into folders such as `Video` and `Music`
 (change this in the app under **Settings**).
 You can also paste any file or page link into the app's **Download URL** box.
@@ -141,8 +144,8 @@ the extension from it.
 
 | What you see | What to do |
 |---|---|
-| “Free-to-Download is not running” | Start the app from the Start menu. It must be running to receive downloads. |
-| Settings doesn't say *Connected* | Make sure the app is open, then click **Check again** in the extension's Settings. |
+| “Free-to-Download is not running” | Open the app once from the Start menu. This registers it with your browser; after that the browser starts it by itself. |
+| Settings says the app is closed | That's fine — it starts automatically when you download. Open it and click **Check again** to confirm the connection. |
 | No **Download this video** button | Refresh the page and let the video play for a few seconds. On sites without a button, use the toolbar icon → *Download video from this page*. |
 | Chrome shows “Disable developer mode extensions” | Click **✕**. The extension keeps working. (This goes away once the extension is on the Chrome Web Store.) |
 | A download fails with an error | Some videos need a login, are DRM-protected, or are live streams; those can't be downloaded. |

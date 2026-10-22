@@ -12,7 +12,8 @@ from datetime import datetime
 import uuid
 import queue
 
-from version import NAME, VERSION
+from version import EXTENSION_IDS, NAME, VERSION
+import native_host
 from downloader import Download, RateLimiter, atomic_json, filename_for, safe_filename, validate_url
 from media import MediaDownload
 from progress_window import DownloadWindow, draw_cells, draw_segments
@@ -692,6 +693,10 @@ class App:
 
 
 if __name__ == "__main__":
+    if native_host.is_host_launch(sys.argv):
+        # Started by the browser because the extension found the app closed: launch it and exit.
+        native_host.serve(sys.executable)
+        raise SystemExit(0)
     if len(sys.argv) == 4 and sys.argv[1] == "--media-smoke":
         target = Path(sys.argv[3])
         target.mkdir(parents=True, exist_ok=True)
@@ -713,6 +718,9 @@ if __name__ == "__main__":
             messagebox.showerror("Free-to-Download", str(exc))
         window.destroy()
         raise SystemExit(0)
+    if getattr(sys, "frozen", False) and "--smoke-test" not in sys.argv:
+        # Refresh on every start so the browser can always launch this copy, even after moving or updating it.
+        native_host.register(app.data, sys.executable, EXTENSION_IDS)
     if "--minimized" in sys.argv:
         window.iconify()
     if "--smoke-test" in sys.argv:

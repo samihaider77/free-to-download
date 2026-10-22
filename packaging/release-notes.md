@@ -15,7 +15,8 @@ Windows may show **"Windows protected your PC"** because the app is not code-sig
    extension folder open automatically.
 3. In Chrome, switch on **Developer mode** (top-right), click **Load unpacked**, and select the
    **browser-extension** folder that opened.
-4. Play a video and click **Download this video**. The extension connects to the app by itself — nothing to paste.
+4. Play a video and click **Download this video**. The extension connects to the app by itself — nothing to paste —
+   and starts the app automatically if it's closed.
 
 **Updating?** Run the new Setup.exe over the old one, then click **↻ Reload** on the extension in `chrome://extensions`.
 

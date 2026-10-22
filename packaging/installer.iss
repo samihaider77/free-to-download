@@ -42,6 +42,11 @@ Name: "startup"; Description: "Start Free-to-Download when I sign in to Windows 
 
 [Registry]
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "Free-to-Download"; ValueData: """{app}\Free-to-Download.exe"" --minimized"; Flags: uninsdeletevalue; Tasks: startup
+; Native messaging launcher: lets the browser extension start the app when it is closed.
+; The manifest it points to is written in [Code] below (and refreshed by the app on every start).
+Root: HKCU; Subkey: "Software\Google\Chrome\NativeMessagingHosts\com.free_to_download.launcher"; ValueType: string; ValueName: ""; ValueData: "{app}\data\native-host.json"; Flags: uninsdeletekey
+Root: HKCU; Subkey: "Software\Microsoft\Edge\NativeMessagingHosts\com.free_to_download.launcher"; ValueType: string; ValueName: ""; ValueData: "{app}\data\native-host.json"; Flags: uninsdeletekey
+Root: HKCU; Subkey: "Software\BraveSoftware\Brave-Browser\NativeMessagingHosts\com.free_to_download.launcher"; ValueType: string; ValueName: ""; ValueData: "{app}\data\native-host.json"; Flags: uninsdeletekey
 #ifdef ChromeStoreId
 Root: HKCU; Subkey: "Software\Google\Chrome\Extensions\{#ChromeStoreId}"; ValueType: string; ValueName: "update_url"; ValueData: "https://clients2.google.com/service/update2/crx"; Flags: uninsdeletekey
 #endif
@@ -82,4 +87,29 @@ end;
 function HasBrowser(Exe: String): Boolean;
 begin
   Result := (BrowserPath(Exe) <> '') and FileExists(BrowserPath(Exe));
+end;
+
+function JsonPath(Path: String): String;
+begin
+  Result := Path;
+  StringChangeEx(Result, '\', '\\', True);
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+var
+  Manifest: String;
+begin
+  if CurStep = ssPostInstall then
+  begin
+    ForceDirectories(ExpandConstant('{app}\data'));
+    Manifest :=
+      '{' + #13#10 +
+      '  "name": "com.free_to_download.launcher",' + #13#10 +
+      '  "description": "Starts Free-to-Download when the browser extension needs it",' + #13#10 +
+      '  "path": "' + JsonPath(ExpandConstant('{app}\Free-to-Download.exe')) + '",' + #13#10 +
+      '  "type": "stdio",' + #13#10 +
+      '  "allowed_origins": ["chrome-extension://peokmobebldmdpbnlnbgolckefjcndkf/"]' + #13#10 +
+      '}' + #13#10;
+    SaveStringToFile(ExpandConstant('{app}\data\native-host.json'), Manifest, False);
+  end;
 end;

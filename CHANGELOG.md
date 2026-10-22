@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.1
+
+- **The browser starts the app for you.** If Free-to-Download is closed when you click a download, the extension asks
+  the browser to launch it (minimized) through a registered native messaging launcher, waits for it, and sends the
+  download — no more “Failed to fetch”. Works in Chrome, Edge and Brave; registered by the installer and refreshed on
+  every app start, removed on uninstall.
+- Clearer messages when the app can't be reached.
+
 ## 0.6.0
 
 - **No more pairing token.** The browser extension now connects to the app automatically: it has a fixed ID, and the

@@ -57,7 +57,20 @@ async function capture(url,type,tabId=1,frameId=3,extra=[]) {
   appToken='second'; calls.length=0;
   assert.equal((await download()).accepted,1);
   assert.equal(JSON.stringify(calls),JSON.stringify(['POST /downloads Bearer first','POST /pair','POST /downloads Bearer second']));
-  context.fetch=async()=>{throw new TypeError('Failed to fetch');}; local={};
+  // App closed: the extension asks the browser to start it (native messaging), waits, then downloads.
+  let appOpen=false; const launches=[];
+  context.setTimeout=(fn)=>fn();  // no real waiting in tests
+  chrome.runtime.sendNativeMessage=async(host,msg)=>{launches.push(host); appOpen=true; return {started:true};};
+  context.fetch=async(url,options={})=>{
+    if (!appOpen) throw new TypeError('Failed to fetch');
+    if (url.endsWith('/pair')) return {ok:true,status:200,json:async()=>({token:'third',version:'0.6.1'})};
+    return {ok:true,status:202,json:async()=>({accepted:1})};
+  };
+  local={token:'third'};
+  assert.equal((await download()).accepted,1);
+  assert.equal(JSON.stringify(launches),JSON.stringify(['com.free_to_download.launcher']));
+  // Launcher not registered (app never run on this PC): a clear message, not "Failed to fetch".
+  appOpen=false; chrome.runtime.sendNativeMessage=async()=>{throw new Error('Specified native messaging host not found.');};
   assert.match((await download()).error,/not running/);
   console.log('PASS: manifest detection, segment exclusion, deduplication, tab/frame isolation, navigation cleanup and automatic pairing');
 })().catch(error=>{console.error(error);process.exitCode=1;});

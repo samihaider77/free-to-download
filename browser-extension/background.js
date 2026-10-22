@@ -1,5 +1,12 @@
 const QUALITIES = ['best', '2160', '1440', '1080', '720', '480', '360', 'audio'];
 const NOT_RUNNING = 'Free-to-Download is not running. Start the app, then try again.';
+const LAUNCHER = 'com.free_to_download.launcher';
+
+class NotRunning extends Error {
+  constructor() { super(NOT_RUNNING); }
+}
+
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 // Ask the desktop app for its token. The app answers only this extension (it checks the
 // browser-set Origin header against our fixed ID), so no manual pairing is needed.
@@ -10,7 +17,7 @@ async function pair(port) {
       method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}', signal: AbortSignal.timeout(3000)
     });
   } catch {
-    throw new Error(NOT_RUNNING);
+    throw new NotRunning();
   }
   const result = await response.json().catch(() => ({}));
   if (!response.ok || !result.token) throw new Error(result.error || 'Could not connect to Free-to-Download.');
@@ -18,9 +25,37 @@ async function pair(port) {
   return result;
 }
 
+// The app is closed: ask the browser to start it through its registered launcher (native messaging),
+// then wait for it to open. The launcher exists once the app has been run on this computer.
+async function startApp(port) {
+  try {
+    await chrome.runtime.sendNativeMessage(LAUNCHER, {action: 'start'});
+  } catch {
+    throw new NotRunning();
+  }
+  for (let attempt = 0; attempt < 40; attempt++) {
+    await sleep(500);
+    try {
+      return await pair(port);
+    } catch (error) {
+      if (!(error instanceof NotRunning)) throw error;
+    }
+  }
+  throw new NotRunning();
+}
+
+async function pairOrStart(port) {
+  try {
+    return await pair(port);
+  } catch (error) {
+    if (!(error instanceof NotRunning)) throw error;
+    return startApp(port);
+  }
+}
+
 async function connection() {
   const {token = '', port = 17863} = await chrome.storage.local.get(['token', 'port']);
-  return {token: token || (await pair(port)).token, port};
+  return {token: token || (await pairOrStart(port)).token, port};
 }
 
 async function sendUrls(urls, media = false, referer = '', title = '', quality = 'best') {
@@ -31,8 +66,16 @@ async function sendUrls(urls, media = false, referer = '', title = '', quality =
   const post = auth => fetch(`http://127.0.0.1:${port}/downloads`, {
     method: 'POST', headers: {'Content-Type': 'application/json', Authorization: `Bearer ${auth}`},
     body: JSON.stringify(body), signal: AbortSignal.timeout(5000)
-  }).catch(() => { throw new Error(NOT_RUNNING); });
-  let response = await post(token);
+  }).catch(() => { throw new NotRunning(); });
+  let response;
+  try {
+    response = await post(token);
+  } catch (error) {
+    if (!(error instanceof NotRunning)) throw error;
+    // The app was closed after pairing: start it, then send.
+    token = (await startApp(port)).token;
+    response = await post(token);
+  }
   if (response.status === 401) {
     // The app was reinstalled or its data reset: fetch the new token once and retry.
     token = (await pair(port)).token;
@@ -49,7 +92,9 @@ async function status() {
     const result = await pair(port);
     return {connected: true, version: result.version};
   } catch (error) {
-    return {connected: false, error: error.message};
+    return error instanceof NotRunning
+      ? {connected: false, error: 'Free-to-Download is closed. It starts by itself when you download something.'}
+      : {connected: false, error: error.message};
   }
 }
 

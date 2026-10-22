@@ -42,6 +42,7 @@ Open source (MIT): https://github.com/samihaider77/free-to-download
 - *contextMenus:* the “Download with Free-to-Download” right-click command.
 - *storage:* keep the connection token for the local app and a temporary per-tab list of detected media.
 - *activeTab / scripting:* list links on the current page when the user presses “Find page links”.
+- *nativeMessaging:* start the user's own Free-to-Download app on this computer when it is closed and a download is requested.
 
 **Data usage disclosures:** collects no user data; nothing is sold or transferred; data is used only for the single purpose above.
 
