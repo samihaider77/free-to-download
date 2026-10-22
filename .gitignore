@@ -1,0 +1,19 @@
+# Runtime data: download queue, settings and the browser pairing token. Never commit.
+data/
+
+# Build output
+build/
+dist/
+*.log
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Editors / OS
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini

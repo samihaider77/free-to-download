@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Free-to-Download — free download manager for Windows</title>
+<meta name="description" content="Free, open-source download manager for Windows with a Download this video button in your browser. Fast multi-connection downloads, resume, and video downloads in the quality you choose.">
+<meta property="og:title" content="Free-to-Download">
+<meta property="og:description" content="Free, open-source download manager for Windows with a Download this video button in your browser.">
+<meta property="og:image" content="https://samihaider77.github.io/free-to-download/assets/video-menu.png">
+<link rel="icon" href="assets/icon.png">
+<style>
+  :root {
+    --bg: #f6f8fb; --surface: #ffffff; --text: #0f172a; --muted: #475569; --line: #e2e8f0;
+    --accent: #0d9488; --accent-strong: #0f766e; --blue: #2563eb; --hero: #0b1220; --hero-text: #e2e8f0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0b1220; --surface: #111a2e; --text: #e5e7eb; --muted: #94a3b8; --line: #1f2a44; --hero: #060b16; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 16px/1.6 "Segoe UI", system-ui, -apple-system, sans-serif; color: var(--text); background: var(--bg); }
+  a { color: var(--blue); }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+  header.hero { background: radial-gradient(1200px 500px at 70% -10%, #134e4a 0%, var(--hero) 60%); color: var(--hero-text); padding: 28px 0 64px; }
+  nav { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; color: #fff; text-decoration: none; }
+  .brand img { width: 32px; height: 32px; }
+  nav .links a { color: #cbd5e1; text-decoration: none; margin-left: 20px; font-size: 15px; }
+  nav .links a:hover { color: #fff; }
+  .hero-grid { display: grid; grid-template-columns: 1fr 1.15fr; gap: 40px; align-items: center; margin-top: 48px; }
+  h1 { font-size: clamp(32px, 5vw, 48px); line-height: 1.1; margin: 0 0 16px; color: #fff; letter-spacing: -0.02em; }
+  .lead { font-size: 18px; color: #cbd5e1; margin: 0 0 28px; }
+  .cta { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .btn { display: inline-flex; align-items: center; gap: 10px; padding: 14px 22px; border-radius: 10px; font-weight: 600; text-decoration: none; }
+  .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 8px 24px rgba(13, 148, 136, .35); }
+  .btn-primary:hover { background: var(--accent-strong); }
+  .btn-ghost { color: #e2e8f0; border: 1px solid rgba(226, 232, 240, .3); }
+  .btn-ghost:hover { border-color: #e2e8f0; }
+  .fine { font-size: 13px; color: #94a3b8; margin-top: 14px; }
+  .shot { width: 100%; border-radius: 14px; box-shadow: 0 30px 70px rgba(0, 0, 0, .5); display: block; }
+  section { padding: 64px 0; }
+  h2 { font-size: 28px; margin: 0 0 8px; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); margin: 0 0 32px; }
+  .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 22px; }
+  .card h3 { margin: 0 0 6px; font-size: 17px; }
+  .card p { margin: 0; color: var(--muted); font-size: 15px; }
+  .icon { width: 36px; height: 36px; border-radius: 9px; background: rgba(13, 148, 136, .12); color: var(--accent); display: grid; place-items: center; margin-bottom: 12px; }
+  .gallery { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
+  .gallery figure { margin: 0; }
+  .gallery img { width: 100%; border-radius: 12px; border: 1px solid var(--line); display: block; }
+  .gallery figcaption { color: var(--muted); font-size: 14px; margin-top: 8px; }
+  .wide { grid-column: 1 / -1; }
+  .steps { counter-reset: step; display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; padding: 0; list-style: none; }
+  .steps li { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 22px; position: relative; }
+  .steps li::before { counter-increment: step; content: counter(step); position: absolute; top: -14px; left: 22px; width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; font-weight: 700; font-size: 14px; }
+  .steps h3 { margin: 6px 0 6px; font-size: 17px; }
+  .steps p { margin: 0; color: var(--muted); font-size: 15px; }
+  code { background: rgba(148, 163, 184, .18); padding: 1px 6px; border-radius: 5px; font-size: 14px; }
+  .note { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 10px; padding: 18px 20px; color: var(--muted); }
+  footer { border-top: 1px solid var(--line); padding: 28px 0 40px; color: var(--muted); font-size: 14px; }
+  footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; }
+  @media (max-width: 860px) {
+    .hero-grid, .gallery, .steps { grid-template-columns: 1fr; }
+    .features { grid-template-columns: 1fr 1fr; }
+    nav .links { display: none; }
+  }
+  @media (max-width: 560px) { .features { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <nav>
+      <a class="brand" href="#"><img src="assets/icon.png" alt="">Free-to-Download</a>
+      <div class="links">
+        <a href="#features">Features</a>
+        <a href="#install">Install</a>
+        <a href="https://github.com/samihaider77/free-to-download">GitHub</a>
+      </div>
+    </nav>
+    <div class="hero-grid">
+      <div>
+        <h1>Download videos and files at full speed.</h1>
+        <p class="lead">A free, open-source download manager for Windows. Click <b>Download this video</b> right on the page, pick a quality, and you're done.</p>
+        <div class="cta">
+          <a class="btn btn-primary" href="https://github.com/samihaider77/free-to-download/releases/latest/download/Free-to-Download-Setup.exe">
+            <svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5v8.2M4.6 6.6 8 10l3.4-3.4M2.5 11.5v2h11v-2" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Download for Windows
+          </a>
+          <a class="btn btn-ghost" href="https://github.com/samihaider77/free-to-download/releases/latest/download/Free-to-Download-Portable.zip">Portable ZIP</a>
+          <a class="btn btn-ghost" href="https://github.com/samihaider77/free-to-download">View source</a>
+        </div>
+        <p class="fine">Windows 10 / 11 · Free and open source (MIT) · No account, no ads, no tracking</p>
+      </div>
+      <img class="shot" src="assets/video-menu.png" alt="The Download this video button with its quality menu over a video">
+    </div>
+  </div>
+</header>
+
+<main>
+  <section id="features">
+    <div class="wrap">
+      <h2>Everything a download manager should do</h2>
+      <p class="sub">Built for everyday use: fast, resumable, and careful with your files.</p>
+      <div class="features">
+        <div class="card"><div class="icon">▶</div><h3>Download this video</h3><p>A button over web videos with a quality menu: Best, 1080p, 720p, 480p, 360p or audio-only MP3.</p></div>
+        <div class="card"><div class="icon">⚡</div><h3>Multi-connection speed</h3><p>Large files are split into chunks and fetched over up to 16 parallel connections.</p></div>
+        <div class="card"><div class="icon">⏯</div><h3>Pause and resume</h3><p>Stop a download and continue later, even after restarting the app, when the server allows it.</p></div>
+        <div class="card"><div class="icon">🎞</div><h3>Streaming sites</h3><p>YouTube, LinkedIn posts, Vimeo, X and many more, plus HLS and DASH streams, saved as MP4.</p></div>
+        <div class="card"><div class="icon">🗂</div><h3>Queue and schedule</h3><p>Limit simultaneous downloads, cap the speed, schedule starts and import a list of links.</p></div>
+        <div class="card"><div class="icon">🔒</div><h3>Private and safe</h3><p>The browser talks only to the app on your PC. Existing files are never overwritten.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>See it in action</h2>
+      <p class="sub">Every download gets its own progress window, and a clear message when it's done.</p>
+      <div class="gallery">
+        <figure><img src="assets/progress-window.png" alt="Download progress window" loading="lazy"><figcaption>Live speed, time left and progress by connection or fragment.</figcaption></figure>
+        <figure><img src="assets/complete-dialog.png" alt="Download complete dialog" loading="lazy"><figcaption>Open the file or its folder straight from the completion dialog.</figcaption></figure>
+        <figure class="wide"><img src="assets/main-window.png" alt="Free-to-Download main window" loading="lazy"><figcaption>All downloads in one place, with categories, search and per-file controls.</figcaption></figure>
+      </div>
+    </div>
+  </section>
+
+  <section id="install">
+    <div class="wrap">
+      <h2>Set up in three steps</h2>
+      <p class="sub">About two minutes, one time only.</p>
+      <ol class="steps">
+        <li><h3>Install the app</h3><p>Run <b>Free-to-Download-Setup.exe</b>. No admin rights needed. If Windows says “Windows protected your PC”, click <b>More info → Run anyway</b>; the app isn't code-signed yet.</p></li>
+        <li><h3>Add the browser button</h3><p>Open <code>chrome://extensions</code>, turn on <b>Developer mode</b>, click <b>Load unpacked</b>, and select the <code>browser-extension</code> folder (Start menu → Free-to-Download → Browser extension folder).</p></li>
+        <li><h3>Pair them</h3><p>In the app click <b>Browser → Copy pairing token</b>, then paste it into the extension's <b>Settings</b>. Play a video and click <b>Download this video</b>.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="note">
+        <b>Responsible use.</b> Free-to-Download is for videos and files you own or have permission to download. Respect each website's terms and copyright law. It does not bypass DRM or other copy protection.
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Free-to-Download · MIT License · <a href="https://github.com/samihaider77/free-to-download/blob/main/THIRD-PARTY-NOTICES.md">Third-party notices</a></span>
+    <span><a href="https://github.com/samihaider77/free-to-download/releases">All releases</a> · <a href="https://github.com/samihaider77/free-to-download/issues">Report an issue</a></span>
+  </div>
+</footer>
+</body>
+</html>

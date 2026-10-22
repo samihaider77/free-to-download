@@ -1,0 +1,79 @@
+name: Release
+
+# Push a tag such as v0.5.2 to build, test and publish the Windows installer and portable ZIP.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Check the tag matches the app and extension versions
+        run: |
+          $tag = "${{ github.ref_name }}".TrimStart("v")
+          $app = python -c "import sys; sys.path.insert(0, 'app'); import version; print(version.VERSION)"
+          $ext = (Get-Content browser-extension/manifest.json -Raw | ConvertFrom-Json).version
+          if ($tag -ne $app -or $tag -ne $ext) { throw "Tag $tag, app/version.py $app and manifest.json $ext must all match." }
+          "VERSION=$tag" >> $env:GITHUB_ENV
+
+      - name: Install dependencies
+        run: python -m pip install -r requirements-build.txt
+
+      - name: Tests
+        run: |
+          python -m unittest discover -s app -p "test_*.py"
+          node test_extension.cjs
+
+      - name: Build the app
+        run: python -m PyInstaller --noconfirm --distpath dist --workpath build packaging/free-to-download.spec
+
+      - name: Smoke-test the packaged app
+        run: |
+          $data = Join-Path $env:RUNNER_TEMP "smoke"
+          $p = Start-Process dist/Free-to-Download/Free-to-Download.exe -ArgumentList "--smoke-test", "`"$data`"" -PassThru -Wait
+          if ($p.ExitCode -ne 0 -or -not (Test-Path "$data/settings.json")) { throw "Packaged app failed to start and shut down cleanly." }
+
+      - name: Download HLS, DASH and page video with the packaged app
+        working-directory: app
+        run: python test_packaged_media.py ../dist/Free-to-Download/Free-to-Download.exe
+
+      - name: Build the installer
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { choco install innosetup --no-progress -y }
+          & $iscc "/DAppVersion=$env:VERSION" packaging/installer.iss
+          if ($LASTEXITCODE -ne 0) { throw "Inno Setup failed." }
+
+      - name: Build the portable ZIP and checksums
+        run: |
+          $folder = "dist/portable/Free-to-Download"
+          New-Item -ItemType Directory -Force $folder | Out-Null
+          Copy-Item dist/Free-to-Download/* $folder -Recurse
+          Copy-Item browser-extension "$folder/browser-extension" -Recurse
+          Copy-Item THIRD-PARTY-LICENSES "$folder/THIRD-PARTY-LICENSES" -Recurse
+          Copy-Item LICENSE, THIRD-PARTY-NOTICES.md $folder
+          Compress-Archive -Path $folder -DestinationPath dist/Free-to-Download-Portable.zip
+          Get-ChildItem dist/Free-to-Download-Setup.exe, dist/Free-to-Download-Portable.zip |
+            ForEach-Object { "$((Get-FileHash $_ -Algorithm SHA256).Hash.ToLower())  $($_.Name)" } |
+            Set-Content dist/SHA256SUMS.txt
+
+      - name: Publish the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" `
+            dist/Free-to-Download-Setup.exe dist/Free-to-Download-Portable.zip dist/SHA256SUMS.txt `
+            --title "Free-to-Download $env:VERSION" --notes-file packaging/release-notes.md
