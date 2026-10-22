@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.3
+
+- **LinkedIn: fixed downloading a different post's video from the feed.** The button now identifies the post that holds
+  the video without looking into neighbouring posts, using the post's ID or its own permalink.
+- If a post can't be identified, the menu says so and lists streams that loaded after this video started first.
+
 ## 0.6.2
 
 - When the app is closed, the extension now waits up to a minute for it to start (the first start after installing or

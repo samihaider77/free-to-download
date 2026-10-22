@@ -56,6 +56,7 @@
   let resetTimer = 0;
   const watched = new WeakSet();
   const dismissed = new WeakSet();
+  const playedAt = new WeakMap();  // when each video first started playing
 
   function directUrl(video) {
     if (video.currentSrc && !/^https?:\/\//i.test(video.currentSrc)) return '';
@@ -96,17 +97,35 @@
   function pageLink(video) {
     if (/linkedin\.com$/i.test(location.hostname)) {
       if (/^\/(feed\/update\/urn:li:activity:\d+|posts\/)/.test(location.pathname)) return location.href;
-      for (let el = video; el && el !== document.documentElement; el = el.parentElement || el.getRootNode()?.host) {
-        for (const attr of el.attributes || []) {
-          const id = attr.value.match(/urn:li:activity:(\d{8,})/)?.[1];
-          if (id) return `https://www.linkedin.com/feed/update/urn:li:activity:${id}/`;
-        }
-      }
-      return '';
+      return linkedInPost(video);
     }
     const embed = location.pathname.match(/^\/(?:embed|shorts)\/([\w-]{11})/);
     if (/youtube(-nocookie)?\.com$/i.test(location.hostname) && embed) return `https://www.youtube.com/watch?v=${embed[1]}`;
     return location.href;
+  }
+
+  // Find the LinkedIn post that holds this video. Climb from the video only while the container
+  // still holds this one video: once it holds others we have left the post and reached the feed.
+  // In each container look for the post's ID in attributes, then for the post's own permalink.
+  function linkedInPost(video) {
+    const postUrl = (kind, id) => `https://www.linkedin.com/feed/update/urn:li:${kind}:${id}/`;
+    let fallback = '';
+    for (let el = video; el && el !== document.documentElement; el = el.parentElement || el.getRootNode()?.host) {
+      if (el !== video && el.querySelectorAll?.('video').length > 1) break;
+      for (const attr of el.attributes || []) {
+        const activity = attr.value.match(/urn:li:activity:(\d{8,})/);
+        if (activity) return postUrl('activity', activity[1]);
+        const other = attr.value.match(/urn:li:(ugcPost|share):(\d{8,})/);
+        if (other && !fallback) fallback = postUrl(other[1], other[2]);
+      }
+      for (const anchor of el.querySelectorAll?.('a[href]') || []) {
+        const href = anchor.href;
+        const activity = href.match(/urn(?::|%3A)li(?::|%3A)activity(?::|%3A)(\d{8,})/i);
+        if (activity) return postUrl('activity', activity[1]);
+        if (/linkedin\.com\/posts\/[^/?#]+-\d{8,}/i.test(href)) return href.split('?')[0];
+      }
+    }
+    return fallback;
   }
 
   function pageTitle() {
@@ -157,7 +176,11 @@
     let items = [];
     try {
       const found = await chrome.runtime.sendMessage({type: 'media-list'});
-      items = (found?.items || []).map(item => describe(item.url, item.kind, item.size));
+      // Streams that loaded after this video started playing most likely belong to it; other
+      // videos on the page (feed autoplay) load streams too.
+      const since = (video && playedAt.get(video)) || 0;
+      items = (found?.items || []).map(item => ({...describe(item.url, item.kind, item.size),
+                                                 mine: !since || item.time >= since - 3000}));
     } catch (error) {
       menu.replaceChildren(note(error.message || 'Extension is not responding. Reload the page.', true));
       return;
@@ -167,10 +190,11 @@
     const seen = new Set();
     items = items.filter(item => !seen.has(item.url) && seen.add(item.url))
       // Audio last; a master playlist ("Best") first, then highest quality, streams before loose files.
-      .sort((a, b) => (a.audio - b.audio) || ((b.stream && !b.height) - (a.stream && !a.height))
-        || (b.height - a.height) || (b.stream - a.stream));
+      .sort((a, b) => ((b.mine ?? true) - (a.mine ?? true)) || (a.audio - b.audio)
+        || ((b.stream && !b.height) - (a.stream && !a.height)) || (b.height - a.height) || (b.stream - a.stream));
     items = items.slice(0, 12);
     const link = video && pageLink(video);
+    const unsure = !link && PAGE_SITES.test(location.hostname) && items.length > 0;
     if (link) {
       const sub = location.hostname.replace(/^www\./, '');
       if (PAGE_SITES.test(location.hostname)) {
@@ -188,6 +212,7 @@
     head.textContent = items.length ? 'Download with Free-to-Download' : 'No video detected yet';
     menu.replaceChildren(head);
     if (!items.length) menu.append(note('Play the video for a few seconds, then click again.'));
+    if (unsure) menu.append(note('Couldn’t identify this post. These streams were seen on the page; the top one most likely belongs to this video.'));
     for (const item of items) {
       const row = document.createElement('button');
       row.type = 'button';
@@ -237,6 +262,7 @@
   function watch(video) {
     if (watched.has(video)) return;
     watched.add(video);
+    video.addEventListener('playing', () => { if (!playedAt.has(video)) playedAt.set(video, Date.now()); }, {passive: true});
     video.addEventListener('mouseenter', () => show(video), {passive: true});
     video.addEventListener('mousemove', () => show(video), {passive: true});
   }
