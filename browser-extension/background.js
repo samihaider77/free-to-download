@@ -6,6 +6,15 @@ class NotRunning extends Error {
   constructor() { super(NOT_RUNNING); }
 }
 
+// The browser could not run the app's launcher (not registered yet, or blocked in this browser).
+// The video menu then falls back to a free-to-download:// link, which the browser can open after one prompt.
+class LauncherMissing extends Error {
+  constructor(detail) {
+    super(`Couldn't start Free-to-Download automatically (${detail}). Open it once from the Start menu, then try again.`);
+    this.code = 'launcher-missing';
+  }
+}
+
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 // Ask the desktop app for its token. The app answers only this extension (it checks the
@@ -31,10 +40,14 @@ async function startApp(port) {
   try {
     await chrome.runtime.sendNativeMessage(LAUNCHER, {action: 'start'});
   } catch (error) {
-    throw new Error(`Couldn't start Free-to-Download automatically (${error.message}). ` +
-                    'Open it once from the Start menu, then try again.');
+    throw new LauncherMissing(error.message);
   }
-  // The first start after installing or updating can be slow while Windows scans the new files.
+  return waitForApp(port);
+}
+
+// Wait for the app to come up after something started it. The first start after installing or
+// updating can be slow while Windows scans the new files.
+async function waitForApp(port) {
   for (let attempt = 0; attempt < 120; attempt++) {
     await sleep(500);
     try {
@@ -138,9 +151,14 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
     });
     return true;
   }
-  if (message.type !== 'download') return;
-  sendUrls(message.urls, message.media === true, message.referer || '', typeof message.title === 'string' ? message.title : '',
-    typeof message.quality === 'string' ? message.quality : 'best').then(respond).catch(error => respond({error: error.message}));
+  if (message.type !== 'download' && message.type !== 'download-when-started') return;
+  const send = () => sendUrls(message.urls, message.media === true, message.referer || '',
+    typeof message.title === 'string' ? message.title : '', typeof message.quality === 'string' ? message.quality : 'best');
+  // 'download-when-started': the page has just opened a free-to-download:// link; wait for the app first.
+  const ready = message.type === 'download-when-started'
+    ? chrome.storage.local.get('port').then(({port = 17863}) => waitForApp(port))
+    : Promise.resolve();
+  ready.then(send).then(respond).catch(error => respond({error: error.message, code: error.code}));
   return true;
 });
 

@@ -316,6 +316,16 @@
     menu.append(foot);
   }
 
+  // Start the desktop app through its registered free-to-download:// link (the page stays where it is).
+  function openAppLink() {
+    const link = document.createElement('a');
+    link.href = 'free-to-download://start';
+    link.style.display = 'none';
+    (document.body || document.documentElement).append(link);
+    link.click();
+    link.remove();
+  }
+
   async function send(url, row, quality) {
     const what = row.querySelector('.what');
     const original = what.textContent;
@@ -325,8 +335,16 @@
     // If the app is closed the browser starts it, which can take a few seconds.
     const slow = setTimeout(() => { what.textContent = 'Starting Free-to-Download…'; }, 1500);
     try {
-      const response = await chrome.runtime.sendMessage({type: 'download', urls: [url], media: true,
-        referer: location.href, title: pageTitle(), quality});
+      const request = {type: 'download', urls: [url], media: true, referer: location.href, title: pageTitle(), quality};
+      let response = await chrome.runtime.sendMessage(request);
+      if (response?.code === 'launcher-missing') {
+        // The browser couldn't run the app's launcher: open a free-to-download:// link instead (still within
+        // this click, which browsers require). The browser asks once "Open Free-to-Download?".
+        clearTimeout(slow);
+        what.textContent = 'Click “Open” if your browser asks…';
+        openAppLink();
+        response = await chrome.runtime.sendMessage({...request, type: 'download-when-started'});
+      }
       if (!response || response.error) throw new Error(response?.error || 'Desktop app did not respond.');
       closeMenu();
       label.textContent = 'Sent to Free-to-Download ✓';

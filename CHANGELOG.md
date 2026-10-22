@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.6
+
+- **Second way to start the app.** Besides the browser's native-messaging launcher, the app now registers a
+  `free-to-download://` link. If a browser can't run the launcher (`native messaging host not found`), the video menu
+  opens that link instead; the browser asks once "Open Free-to-Download?" (tick *Always allow*) and the download
+  continues by itself. Registered by the installer and on every app start; removed on uninstall.
+- A background start (sign-in, launcher or link) never pops up the window if the app is already running.
+
 ## 0.6.5
 
 - Video menu: when a video's ID can't be matched to a stream (for example a LinkedIn post with a custom cover image),

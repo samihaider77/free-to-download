@@ -71,7 +71,21 @@ async function capture(url,type,tabId=1,frameId=3,extra=[]) {
   assert.equal(JSON.stringify(launches),JSON.stringify(['com.free_to_download.launcher']));
   // Launcher not registered (app never run on this PC): a clear message with the reason, not "Failed to fetch".
   appOpen=false; chrome.runtime.sendNativeMessage=async()=>{throw new Error('Specified native messaging host not found.');};
-  assert.match((await download()).error,/Couldn't start Free-to-Download automatically \(Specified native messaging host not found\.\)/);
+  const missing=await download();
+  assert.match(missing.error,/Couldn't start Free-to-Download automatically \(Specified native messaging host not found\.\)/);
+  assert.equal(missing.code,'launcher-missing');
+  // The video menu then opens a free-to-download:// link and asks the background to wait for the app.
+  let polls=0;
+  context.fetch=async(url)=>{
+    if (++polls<4) throw new TypeError('Failed to fetch');  // app still starting
+    if (url.endsWith('/pair')) return {ok:true,status:200,json:async()=>({token:'fourth',version:'0.6.6'})};
+    return {ok:true,status:202,json:async()=>({accepted:1})};
+  };
+  local={};
+  const afterStart=await new Promise(resolve=>chrome.runtime.onMessage.fn(
+    {type:'download-when-started',urls:['https://cdn.example/a.zip']},{id:'test'},resolve));
+  assert.equal(afterStart.accepted,1);
+  context.fetch=async()=>{throw new TypeError('Failed to fetch');};
   // Launcher ran but the app never answered: a "still starting" message after the wait.
   chrome.runtime.sendNativeMessage=async()=>({started:true});
   assert.match((await download()).error,/starting but is taking a while/);

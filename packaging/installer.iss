@@ -47,6 +47,10 @@ Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: 
 Root: HKCU; Subkey: "Software\Google\Chrome\NativeMessagingHosts\com.free_to_download.launcher"; ValueType: string; ValueName: ""; ValueData: "{app}\data\native-host.json"; Flags: uninsdeletekey
 Root: HKCU; Subkey: "Software\Microsoft\Edge\NativeMessagingHosts\com.free_to_download.launcher"; ValueType: string; ValueName: ""; ValueData: "{app}\data\native-host.json"; Flags: uninsdeletekey
 Root: HKCU; Subkey: "Software\BraveSoftware\Brave-Browser\NativeMessagingHosts\com.free_to_download.launcher"; ValueType: string; ValueName: ""; ValueData: "{app}\data\native-host.json"; Flags: uninsdeletekey
+; Fallback launcher: free-to-download:// links start the app minimized (the link's address is ignored).
+Root: HKCU; Subkey: "Software\Classes\free-to-download"; ValueType: string; ValueName: ""; ValueData: "URL:Free-to-Download"; Flags: uninsdeletekey
+Root: HKCU; Subkey: "Software\Classes\free-to-download"; ValueType: string; ValueName: "URL Protocol"; ValueData: ""
+Root: HKCU; Subkey: "Software\Classes\free-to-download\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\Free-to-Download.exe"" --minimized"
 #ifdef ChromeStoreId
 Root: HKCU; Subkey: "Software\Google\Chrome\Extensions\{#ChromeStoreId}"; ValueType: string; ValueName: "update_url"; ValueData: "https://clients2.google.com/service/update2/crx"; Flags: uninsdeletekey
 #endif

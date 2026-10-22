@@ -714,7 +714,8 @@ if __name__ == "__main__":
         app = App(window, sys.argv[2] if len(sys.argv) > 2 and sys.argv[1] == "--smoke-test" else None)
     except RuntimeError as exc:
         # Already running (often minimized since sign-in): bring that window forward instead of complaining.
-        if not show_running_instance():
+        # A background start (--minimized: sign-in, browser launcher, free-to-download:// link) just exits.
+        if "--minimized" not in sys.argv and not show_running_instance():
             messagebox.showerror("Free-to-Download", str(exc))
         window.destroy()
         raise SystemExit(0)

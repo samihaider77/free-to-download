@@ -41,9 +41,26 @@ def register(data, executable, extension_ids):
         for parent in BROWSER_KEYS:
             with winreg.CreateKey(winreg.HKEY_CURRENT_USER, rf"{parent}\{HOST_NAME}") as key:
                 winreg.SetValue(key, "", winreg.REG_SZ, str(manifest.resolve()))
+        register_link(executable)
         return True
     except (ImportError, OSError):
         return False
+
+
+LINK_SCHEME = "free-to-download"
+
+
+def register_link(executable):
+    """Fallback launcher: a free-to-download:// link starts the app (the browser asks once, like Zoom links).
+    The link's address is ignored, so a web page can only start the app, never pass it anything."""
+    import winreg
+    command = f'"{Path(executable).resolve()}" --minimized'
+    base = rf"Software\Classes\{LINK_SCHEME}"
+    with winreg.CreateKey(winreg.HKEY_CURRENT_USER, base) as key:
+        winreg.SetValue(key, "", winreg.REG_SZ, "URL:Free-to-Download")
+        winreg.SetValueEx(key, "URL Protocol", 0, winreg.REG_SZ, "")
+    with winreg.CreateKey(winreg.HKEY_CURRENT_USER, rf"{base}\shell\open\command") as key:
+        winreg.SetValue(key, "", winreg.REG_SZ, command)
 
 
 def app_running(port=17863):

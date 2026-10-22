@@ -145,6 +145,7 @@ the extension from it.
 | What you see | What to do |
 |---|---|
 | “Free-to-Download is not running” | Open the app once from the Start menu. This registers it with your browser; after that the browser starts it by itself. |
+| Chrome asks “Open Free-to-Download?” | Tick **Always allow** and click **Open**. This is the backup way the browser starts the app; it only asks once. |
 | Settings says the app is closed | That's fine — it starts automatically when you download. Open it and click **Check again** to confirm the connection. |
 | No **Download this video** button | Refresh the page and let the video play for a few seconds. On sites without a button, use the toolbar icon → *Download video from this page*. |
 | Chrome shows “Disable developer mode extensions” | Click **✕**. The extension keeps working. (This goes away once the extension is on the Chrome Web Store.) |
