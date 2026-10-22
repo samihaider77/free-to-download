@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.4
+
+- **LinkedIn feed: streams are matched to the exact video.** LinkedIn's video ID appears in both the video's cover image
+  and its stream addresses, so the menu now offers only that video's streams (with the quality choices), even when the
+  post itself can't be identified. If the video's own stream hasn't loaded yet, it asks you to play it instead of
+  offering another video.
+- **Copy diagnostic info** button when a video can't be identified, for bug reports.
+
 ## 0.6.3
 
 - **LinkedIn: fixed downloading a different post's video from the feed.** The button now identifies the post that holds

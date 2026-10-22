@@ -128,6 +128,40 @@
     return fallback;
   }
 
+  // Media asset ID from the video's cover image: the poster, or a cover image inside the same post.
+  function videoAsset(video) {
+    const cover = /\/dms\/image\/(?:v2\/)?([A-Za-z0-9_-]{12,})\/videocover/;
+    const sources = [video.poster];
+    const attributesOf = node => [...(node.attributes || [])].map(attr => attr.value).filter(value => value.includes('videocover'));
+    sources.push(...attributesOf(video));
+    for (let el = video.parentElement, depth = 0; el && depth < 8; el = el.parentElement, depth++) {
+      if (el.querySelectorAll('video').length > 1) break;
+      sources.push(...attributesOf(el));  // e.g. data-poster-url on the player wrapper
+      for (const node of el.querySelectorAll('img[src*="videocover"], [style*="videocover"], [data-poster-url]')) {
+        sources.push(node.currentSrc || node.src, ...attributesOf(node));
+      }
+    }
+    for (const source of sources) {
+      const id = (source || '').match(cover)?.[1];
+      if (id) return id;
+    }
+    return '';
+  }
+
+  // Page structure around the video, without query strings (they hold access tokens), for bug reports.
+  function diagnostics(video, items) {
+    const strip = value => String(value || '').split('?')[0].slice(0, 160);
+    const chain = [];
+    for (let el = video, depth = 0; el && el !== document.documentElement && depth < 12; el = el.parentElement, depth++) {
+      chain.push([el.tagName.toLowerCase(), el.id ? '#' + el.id : '', strip(el.className),
+        [...el.attributes].filter(a => !['class', 'id', 'style'].includes(a.name)).map(a => `${a.name}=${strip(a.value)}`).join(' '),
+        `videos:${el.querySelectorAll?.('video').length ?? 0}`].filter(Boolean).join(' '));
+    }
+    return JSON.stringify({extension: chrome.runtime.getManifest().version, host: location.hostname,
+      poster: strip(video?.poster), src: strip(video?.currentSrc), asset: video ? videoAsset(video) : '',
+      streams: items.map(item => strip(item.url)), chain}, null, 1);
+  }
+
   function pageTitle() {
     const raw = (document.title || '').replace(/^\(\d+\)\s*/, '').trim();
     const parts = raw.match(/^(.*?)\s+[|\-–—]\s+([^|\-–—]{2,40})$/);
@@ -192,9 +226,22 @@
       // Audio last; a master playlist ("Best") first, then highest quality, streams before loose files.
       .sort((a, b) => ((b.mine ?? true) - (a.mine ?? true)) || (a.audio - b.audio)
         || ((b.stream && !b.height) - (a.stream && !a.height)) || (b.height - a.height) || (b.stream - a.stream));
+    // A site's media ID in the video's cover image (LinkedIn: /dms/image/v2/<asset>/videocover…) also
+    // appears in every stream address of that video, so it singles out this video's streams.
+    const asset = video ? videoAsset(video) : '';
+    const matched = asset ? items.filter(item => item.url.includes(asset)) : [];
+    // Known video but none of its streams seen yet: never offer other videos' streams instead.
+    const waitForPlay = Boolean(asset) && !matched.length && !pageLink(video);
+    if (matched.length || waitForPlay) items = matched;
     items = items.slice(0, 12);
-    const link = video && pageLink(video);
-    const unsure = !link && PAGE_SITES.test(location.hostname) && items.length > 0;
+    let link = video && pageLink(video);
+    // No page link, but this video's own stream manifest is known: offer the quality choices on it.
+    const manifest = !link && matched.find(item => item.stream);
+    if (manifest) {
+      link = manifest.url;
+      items = items.filter(item => item !== manifest);
+    }
+    const unsure = !link && !matched.length && PAGE_SITES.test(location.hostname) && items.length > 0;
     if (link) {
       const sub = location.hostname.replace(/^www\./, '');
       if (PAGE_SITES.test(location.hostname)) {
@@ -211,8 +258,21 @@
     head.className = 'head';
     head.textContent = items.length ? 'Download with Free-to-Download' : 'No video detected yet';
     menu.replaceChildren(head);
-    if (!items.length) menu.append(note('Play the video for a few seconds, then click again.'));
-    if (unsure) menu.append(note('Couldn’t identify this post. These streams were seen on the page; the top one most likely belongs to this video.'));
+    if (!items.length) menu.append(note(waitForPlay ? 'Play this video for a few seconds, then click again.'
+                                                     : 'Play the video for a few seconds, then click again.'));
+    if (unsure) {
+      menu.append(note('Couldn’t identify this video for sure. These streams were seen on the page; the top one most likely belongs to it.'));
+      const copy = document.createElement('button');
+      copy.type = 'button';
+      copy.className = 'item';
+      copy.textContent = 'Copy diagnostic info (for a bug report)';
+      copy.addEventListener('click', async event => {
+        event.stopPropagation();
+        await navigator.clipboard.writeText(diagnostics(video, items)).catch(() => {});
+        copy.textContent = 'Copied ✓ — paste it into an issue on GitHub';
+      });
+      menu.append(copy);
+    }
     for (const item of items) {
       const row = document.createElement('button');
       row.type = 'button';

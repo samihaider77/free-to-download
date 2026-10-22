@@ -1,5 +1,5 @@
 """Single source of the app version; the release workflow checks the git tag and extension manifest against it."""
-VERSION = "0.6.3"
+VERSION = "0.6.4"
 NAME = "Free-to-Download"
 
 # Browser extensions allowed to pair automatically, by their fixed extension ID.
