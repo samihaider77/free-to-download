@@ -60,6 +60,8 @@ class MediaTest(unittest.TestCase):
                 job.run()
                 self.assertEqual(job.status,'Complete',job.error)
                 self.assertTrue(job.destination.exists())
+                # No duplicate working copy is left behind once the file is published.
+                self.assertFalse((root/'parts').exists())
                 self.ff(['-i',str(job.destination),'-map','0:v:0','-map','0:a:0','-f','null','-'])
 
     def test_quality_choice_and_audio_only(self):

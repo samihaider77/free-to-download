@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.7
+
+- **No more duplicate copies.** Finished video downloads now delete their working copy and fragments. Before, every
+  video or MP3 left a full second copy inside the app's `data` folder.
+- The progress and download-complete windows stay on top for a few seconds when they open, so they're visible even
+  when the browser has focus (for example when the browser just started the app).
+
 ## 0.6.6
 
 - **Second way to start the app.** Besides the browser's native-messaging launcher, the app now registers a

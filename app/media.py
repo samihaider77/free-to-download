@@ -1,6 +1,7 @@
 """Media extraction and unprotected HLS/DASH downloads using yt-dlp."""
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import time
 import sys
@@ -194,4 +195,7 @@ class MediaDownload(Download):
                 self.status, self.error = "Error", re.sub(r"^(ERROR:\s*)+", "", str(exc))
         finally:
             self.elapsed = time.monotonic() - started
+        if self.status == "Complete":
+            # The finished file was copied to its destination; drop the working copy and fragments.
+            shutil.rmtree(self.workdir, ignore_errors=True)
         return self.status

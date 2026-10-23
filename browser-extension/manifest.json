@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAjxEY449At4wQyz/TSe2H9ilrtYpC08euNymHiDRSFij+xM9f9uTCZ6w0GLMJUz8VZbw3Bwv7Eppb+cvBR4dZd/74zL2D10CI0uNlHoAO7hvu0D05BotmctBxOjJ+MVZlTKMpK6bZvvvxPDDiE4Bb+1g5tGuiuIJWxJvUhAjxGmUzMB0yXYTxD/d6uD7fJnPaAvIrxEmg6eUbwK6ckS2x2dCgDTWPkIVOGtchxmhL/K97QOo82KOCIZeZeqvby2Bx1WgKGnPRF0vnKinHqnsjDHcJnnVmq6UaWxW2jUWoVqBxVMyWdDboXYEYw/NPKMZka7DovoJgUBd7qJq5c2CFpwIDAQAB",
   "name": "Free-to-Download",
-  "version": "0.6.6",
+  "version": "0.6.7",
   "description": "Send links and direct media URLs to your local Free-to-Download app.",
   "permissions": ["contextMenus", "storage", "activeTab", "scripting", "webRequest", "nativeMessaging"],
   "host_permissions": ["http://*/*", "https://*/*"],

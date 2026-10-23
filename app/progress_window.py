@@ -85,7 +85,7 @@ class DownloadWindow:
         self.win.geometry(f"+{max(0, x)}+{max(0, y)}")
         # Pop up over the browser the way a download manager should, without staying pinned there.
         self.win.attributes("-topmost", True)
-        self.win.after(1500, lambda: self.win.winfo_exists() and self.win.attributes("-topmost", False))
+        self.win.after(4000, lambda: self.win.winfo_exists() and self.win.attributes("-topmost", False))
         self.body = tk.Frame(self.win, bg=BG)
         self.body.pack(fill="both", expand=True)
         self.refresh()
@@ -274,7 +274,7 @@ class DownloadWindow:
                        font=("Segoe UI", 9), command=self.toggle_quiet).pack(anchor="w", padx=14, pady=(0, 10))
         opener.focus_set()
         self.win.attributes("-topmost", True)
-        self.win.after(1500, lambda: self.win.winfo_exists() and self.win.attributes("-topmost", False))
+        self.win.after(4000, lambda: self.win.winfo_exists() and self.win.attributes("-topmost", False))
 
     def toggle_quiet(self):
         self.app.settings["complete_dialog"] = not self.quiet.get()
